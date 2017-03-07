@@ -356,7 +356,7 @@ class Comment(db.Model):
         c = Comment.all().filter('post =', blog_id).order('created')
         return c
 
-class DeleteComment(Handler):
+class DeleteComment(BlogHandler):
 
     def get(self, post_id, comment_id):
         comment = Comment.get_by_id(int(comment_id))
@@ -370,7 +370,7 @@ class DeleteComment(Handler):
         else:
             self.write("This comment no longer exists")
 
-class EditComment(Handler):
+class EditComment(BlogHandler):
 
     def get(self, post_id, comment_id):
         post = Blog.get_by_id(int(post_id), parent=blog_key())
