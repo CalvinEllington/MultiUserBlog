@@ -17,7 +17,7 @@ jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
 
 secret = 'fart'
 
-### base handler ###
+#<-Basics---------------------------->
 
 def render_str(template, **params):
     t = jinja_env.get_template(template)
@@ -30,6 +30,8 @@ def check_secure_val(secure_val):
     val = secure_val.split('|')[0]
     if secure_val == make_secure_val(val):
         return val
+
+#<-BlogHandler---------------------------->
 
 class BlogHandler(webapp2.RequestHandler):
     def write(self, *a, **kw):
@@ -72,8 +74,6 @@ class MainPage(BlogHandler):
       self.render('front.html')
 
 
-### user stuff ###
-
 def make_salt(length = 5):
     return ''.join(random.choice(letters) for x in xrange(length))
 
@@ -89,6 +89,8 @@ def valid_pw(name, password, h):
 
 def users_key(group = 'default'):
     return db.Key.from_path('users', group)
+
+#<-Users---------------------------->
 
 class User(db.Model):
     name = db.StringProperty(required = True)
@@ -119,10 +121,10 @@ class User(db.Model):
             return u
 
 
-### blog stuff ###
-
 def blog_key(name = 'default'):
     return db.Key.from_path('blogs', name)
+
+#<-db models---------------------------->
 
 class Post(db.Model):
     subject = db.StringProperty(required = True)
@@ -136,6 +138,52 @@ class Post(db.Model):
     def render(self):
         self._render_text = self.content.replace('\n', '<br>')
         return render_str("post.html", p = self)
+
+class Comment(db.Model):
+    user = db.ReferenceProperty(User, required=True)
+    post = db.ReferenceProperty(Post, required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
+    text = db.TextProperty(required=True)
+
+    @classmethod
+    def cdb_blog_id(cls, blog_id):
+        c = Comment.all().filter('post =', blog_id)
+        return c.count()
+
+    @classmethod
+    def adb_blog_id(cls, blog_id):
+        c = Comment.all().filter('post =', blog_id).order('created')
+        return c
+
+class Like(db.Model):
+    user = db.ReferenceProperty(User, required=True)
+    post = db.ReferenceProperty(Post, required=True)
+
+    @classmethod
+    def dbl_blog_id(cls, blog_id):
+        l = Like.all().filter('post =', blog_id)
+        return l.count()
+
+    @classmethod
+    def likes(cls, blog_id, user_id):
+        cl = Like.all().filter('post =', blog_id).filter('user =', user_id)
+        return cl.count()
+
+class Unlike(db.Model):
+    user = db.ReferenceProperty(User, required=True)
+    post = db.ReferenceProperty(Post, required=True)
+
+    @classmethod
+    def dbu_blog_id(cls, blog_id):
+        ul = Unlike.all().filter('post =', blog_id)
+        return ul.count()
+
+    @classmethod
+    def unlikes(cls, blog_id, user_id):
+        cul = Unlike.all().filter('post =', blog_id).filter('user =', user_id)
+        return cul.count()
+
+#<-Posts, Comments, Likes------------------->
 
 class BlogFront(BlogHandler):
     def get(self):
@@ -279,7 +327,7 @@ class NewPost(BlogHandler):
 class EditPost(BlogHandler):
 
     def get(self, blog_id):
-        key = db.Key.from_path("Blog", int(blog_id), parent=blog_key())
+        key = db.Key.from_path("Post", int(blog_id), parent=blog_key())
         post = db.get(key)
 
         if self.user:
@@ -291,7 +339,7 @@ class EditPost(BlogHandler):
             self.redirect("/login")
 
     def post(self, blog_id):
-        key = db.Key.from_path("Post", int(post_id), parent=blog_key())
+        key = db.Key.from_path("Post", int(blog_id), parent=blog_key())
         post = db.get(key)
 
         if self.request.get("update"):
@@ -340,22 +388,6 @@ class DeletePost(BlogHandler):
             time.sleep(0.1)
             self.redirect('/')
 
-class Comment(db.Model):
-    user = db.ReferenceProperty(User, required=True)
-    post = db.ReferenceProperty(Post, required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    text = db.TextProperty(required=True)
-
-    @classmethod
-    def cdb_blog_id(cls, blog_id):
-        c = Comment.all().filter('post =', blog_id)
-        return c.count()
-
-    @classmethod
-    def adb_blog_id(cls, blog_id):
-        c = Comment.all().filter('post =', blog_id).order('created')
-        return c
-
 class DeleteComment(BlogHandler):
 
     def get(self, post_id, comment_id):
@@ -373,7 +405,7 @@ class DeleteComment(BlogHandler):
 class EditComment(BlogHandler):
 
     def get(self, post_id, comment_id):
-        post = Blog.get_by_id(int(post_id), parent=blog_key())
+        post = Post.get_by_id(int(post_id), parent=blog_key())
         comment = Comment.get_by_id(int(comment_id))
         if comment:
             if comment.user.name == self.user.name:
@@ -402,35 +434,7 @@ class EditComment(BlogHandler):
         elif self.request.get("cancel"):
             self.redirect('/post/%s' % str(post_id))
 
-class Like(db.Model):
-    user = db.ReferenceProperty(User, required=True)
-    post = db.ReferenceProperty(Post, required=True)
-
-    @classmethod
-    def dbl_blog_id(cls, blog_id):
-        l = Like.all().filter('post =', blog_id)
-        return l.count()
-
-    @classmethod
-    def likes(cls, blog_id, user_id):
-        cl = Like.all().filter('post =', blog_id).filter('user =', user_id)
-        return cl.count()
-
-class Unlike(db.Model):
-    user = db.ReferenceProperty(User, required=True)
-    post = db.ReferenceProperty(Post, required=True)
-
-    @classmethod
-    def dbu_blog_id(cls, blog_id):
-        ul = Unlike.all().filter('post =', blog_id)
-        return ul.count()
-
-    @classmethod
-    def unlikes(cls, blog_id, user_id):
-        cul = Unlike.all().filter('post =', blog_id).filter('user =', user_id)
-        return cul.count()
-
-### Unit 2 HW's ###
+#<-Lesson HW -------------------------->
 
 class Rot13(BlogHandler):
     def get(self):
@@ -443,7 +447,6 @@ class Rot13(BlogHandler):
             rot13 = text.encode('rot13')
 
         self.render('rot13-form.html', text = rot13)
-
 
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
 def valid_username(username):
@@ -500,7 +503,6 @@ class Unit2Signup(Signup):
 
 class Register(Signup):
     def done(self):
-        #make sure the user doesn't already exist
         u = User.by_name(self.username)
         if u:
             msg = 'That user already exists.'
@@ -555,8 +557,10 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/blog/?', BlogFront),
                                ('/post/([0-9]+)', PostPage),
                                ('/newpost', NewPost),
-                               ('/editpost/([0-9]+)', EditPost),
-                               ('/deletepost/[0-9]+)', DeletePost),
+                               ('/edit/([0-9]+)', EditPost),
+                               ('/delete/([0-9]+)', DeletePost),
+                               ('/blog/([0-9]+)/editcomment/([0-9+])', EditComment),
+                               ('/blog/([0-9]+)/deletecomment/([0-9+])', DeleteComment),
                                ('/signup', Register),
                                ('/login', Login),
                                ('/logout', Logout),

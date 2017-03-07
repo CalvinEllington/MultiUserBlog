@@ -1,18 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
   <div class="twelve columns">
-    <h3>Edit Post</h3>
+    <h3>Edit Comment</h3>
       <hr>
       <div class="row">
         <div class="twelve columns">
+          <div class="u-pull-left">
+            <small>Posted by {{comment.user.name}} on {{comment.created.strftime("%b %d, %Y")}}</small>
+          </div>
+          <hr>
         <form method="post">
-            <label>
-             <div>subject</div>
-             <input class="u-full-width" type="text" name="subject" value="{{post.subject}}">
-           </label>
            <label>
-             <div>blog</div>
-             <textarea class="u-full-width" name="content" id="texta2">{{post.content}}</textarea>
+             <textarea class="u-full-width" name="content" id="texta2">{{comment_text}}</textarea>
            </label>
            <div class="error">{{post_error}}</div>
            <input type="submit" class="button" name="update" value="Update">

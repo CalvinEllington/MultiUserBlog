@@ -17,9 +17,44 @@
                   <input type="submit" class="button" name='delete' value='delete'>
               </form>
               <span class="alert-danger">{{error}}</span>
+              <hr>
             {% endif %}
+            {% if comments_count == 1 %}
+            <h5>{{comments_count}} comment</h5>
+            {% else %}
+            <h5>{{comments_count}} comments</h5>
+            {% endif %}
+            {% for comment in post_comments %}
+             <div class="six columns">
+                <h6>{{comment.text}}</h6>
+                <br><br>
+                <div>
+                  <div class="u-pull-left">
+                    <small>Posted by {{comment.user.name}} on {{comment.created.strftime("%b %d, %Y")}}</small>
+                  </div>
+                  <div class="u-pull-left">
+                    {% if comment.user.name == user.name %}
+                        (<a href="/blog/{{post.key().id()}}/editcomment/{{comment.key().id()}}">edit</a> |
+                        <a href="/blog/{{post.key().id()}}/deletecomment/{{comment.key().id()}}">delete</a>)
+                    {% endif %}
+                  </div>
+                </div>
+             </div>
+            {% endfor %}
+            <br><br>
+            {% if user %}
+            <form method="POST">
+              <label>
+                Add Comment<br>
+                <textarea class="form-control" name="comment_text" style="width:400px;height:100px;">{{comment_text | safe}}</textarea>
+              </label>
+              <br>
+              <div class="alert-danger">{{comment_error}}</div>
+              <input type="submit" class="btn btn-success" name="add_comment" value="Post">
+            </form>
+            {% endif %}
+          </div>
         </div>
       </div>
     </div>
-  </div>
 {% endblock %}
