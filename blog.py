@@ -3,8 +3,9 @@ import re
 import random
 import hashlib
 import hmac
+import codecs
+import time
 from string import letters
-
 import webapp2
 import jinja2
 
@@ -16,7 +17,7 @@ jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
 
 secret = 'fart'
 
-### Base Handler. ###
+### base handler ###
 
 def render_str(template, **params):
     t = jinja_env.get_template(template)
@@ -68,7 +69,7 @@ def render_post(response, post):
 
 class MainPage(BlogHandler):
   def get(self):
-      self.write('Hello, Udacity!')
+      self.render('front.html')
 
 
 ### user stuff ###
@@ -118,7 +119,7 @@ class User(db.Model):
             return u
 
 
-##### blog stuff
+### blog stuff ###
 
 def blog_key(name = 'default'):
     return db.Key.from_path('blogs', name)
@@ -128,6 +129,9 @@ class Post(db.Model):
     content = db.TextProperty(required = True)
     created = db.DateTimeProperty(auto_now_add = True)
     last_modified = db.DateTimeProperty(auto_now = True)
+    user = db.ReferenceProperty(User,
+                                required=True,
+                                collection_name="blogs")
 
     def render(self):
         self._render_text = self.content.replace('\n', '<br>')
@@ -147,7 +151,107 @@ class PostPage(BlogHandler):
             self.error(404)
             return
 
-        self.render("permalink.html", post = post)
+        likes = Like.dbl_blog_id(post)
+        unlikes = Unlike.dbu_blog_id(post)
+        post_comments = Comment.adb_blog_id(post)
+        comments_count = Comment.cdb_blog_id(post)
+
+        self.render("permalink.html", post = post, likes = likes,
+                                      unlikes = unlikes,
+                                      post_comments = post_comments,
+                                      comments_count = comments_count)
+
+    def post(self, post_id):
+        key = db.Key.from_path("Post", int(post_id), parent=blog_key())
+        post = db.get(key)
+        user_id = User.by_name(self.user.name)
+        comments_count = Comment.cdb_blog_id(post)
+        post_comments = Comment.adb_blog_id(post)
+        likes = Like.dbl_blog_id(post)
+        unlikes = Unlike.dbu_blog_id(post)
+        previously_liked = Like.likes(post, user_id)
+        previously_unliked = Unlike.unlikes(post, user_id)
+
+        if self.user:
+            if self.request.get("like"):
+                if post.user.key().id() != User.by_name(self.user.name).key().id():
+                    if previously_liked == 0:
+                        l = Like(post = post, user = User.by_name(self.user.name))
+                        l.put()
+                        time.sleep(0.1)
+                        self.redirect('/post/%s' % str(post.key().id()))
+                    else:
+                        error = "You can only like a post once"
+                        self.render("post.html", post = post, likes = likes,
+                                                 unlikes = unlikes,
+                                                 error = error,
+                                                 comments_count = comments_count,
+                                                 post_comments = post_comments)
+                else:
+                    error = "You cannot like your own posts"
+                    self.render("post.html", post = post, likes = likes,
+                                             unlikes = unlikes, error = error,
+                                             comments_count = comments_count,
+                                             post_comments = post_comments)
+            if self.request.get("unlike"):
+                if post.user.key().id() != User.by_name(self.user.name).key().id():
+                    if previously_unliked == 0:
+                        ul = Unlike(post = post, user = User.by_name(self.user.name))
+                        ul.put()
+                        time.sleep(0.1)
+                        self.redirect('/post/%s' % str(post.key().id()))
+                    else:
+                        error = "You can only unlike a post once"
+                        self.render("post.html", post = post, likes = likes,
+                                                 unlikes = unlikes,
+                                                 error = error,
+                                                 comments_count = comments_count,
+                                                 post_comments = post_comments)
+                else:
+                    error = "You cannot unlike your own posts"
+                    self.render("post.html", post = post, likes = likes,
+                                             unlikes = unlikes, error = error,
+                                             comments_count = comments_count,
+                                             post_comments = post_comments)
+            if self.request.get("add_comment"):
+                comment_text = self.request.get("comment_text")
+                if comment_text:
+                    c = Comment(post = post, user = User.by_name(
+                                self.user.name), text = comment_text)
+                    c.put()
+                    time.sleep(0.1)
+                    self.redirect('/post/%s' % str(post.key().id()))
+                else:
+                    comment_error = "Please enter a comment"
+                    self.render("post.html", post = post, likes = likes,
+                                             unlikes = unlikes,
+                                             comments_count = comments_count,
+                                             post_comments = post_comments,
+                                             comment_error = comment_error)
+            if self.request.get("edit"):
+                if post.user.key().id() == User.by_name(self.user.name).key().id():
+                    self.redirect('/edit/%s' % str(post.key().id()))
+                else:
+                    error = "You may only edit your own posts"
+                    self.render("post.html", post = post, likes = likes,
+                                             unlikes = unlikes,
+                                             comments_count = comments_count,
+                                             post_comments = post_comments,
+                                             error = error)
+            if self.request.get("delete"):
+                if post.user.key().id() == User.by_name(self.user.name).key().id():
+                    db.delete(key)
+                    time.sleep(0.1)
+                    self.redirect('/')
+                else:
+                    error = "You may only delete your own posts"
+                    self.render("post.html", post = post, likes = likes,
+                                             unlikes = unlikes,
+                                             comments_count = comments_count,
+                                             post_comments = post_comments,
+                                             error = error)
+        else:
+            self.redirect("/login")
 
 class NewPost(BlogHandler):
     def get(self):
@@ -162,16 +266,172 @@ class NewPost(BlogHandler):
 
         subject = self.request.get('subject')
         content = self.request.get('content')
+        user_id = User.by_name(self.user.name)
 
         if subject and content:
-            p = Post(parent = blog_key(), subject = subject, content = content)
+            p = Post(parent = blog_key(), subject = subject, content = content, user = user_id)
             p.put()
-            self.redirect('/blog/%s' % str(p.key().id()))
+            self.redirect('/post/%s' % str(p.key().id()))
         else:
             error = "subject and content, please!"
             self.render("newpost.html", subject=subject, content=content, error=error)
 
+class EditPost(BlogHandler):
+
+    def get(self, blog_id):
+        key = db.Key.from_path("Blog", int(blog_id), parent=blog_key())
+        post = db.get(key)
+
+        if self.user:
+            if post.user.key().id() == User.by_name(self.user.name).key().id():
+                self.render("editpost.html", post=post)
+            else:
+                self.response.out.write("You cannot edit other user's posts")
+        else:
+            self.redirect("/login")
+
+    def post(self, blog_id):
+        key = db.Key.from_path("Post", int(post_id), parent=blog_key())
+        post = db.get(key)
+
+        if self.request.get("update"):
+
+            subject = self.request.get("subject")
+            content = self.request.get("content").replace('\n', '<br>')
+
+            if post.user.key().id() == User.by_name(self.user.name).key().id():
+                if subject and content:
+                    post.subject = subject
+                    post.content = content
+                    post.put()
+                    time.sleep(0.1)
+                    self.redirect('/post/%s' % str(post.key().id()))
+                else:
+                    post_error = "Please enter a subject and the blog content"
+                    self.render("editpost.html", subject = subject,
+                                                 content = content,
+                                                 post_error = post_error)
+            else:
+                self.response.out.write("You cannot edit other user's posts")
+        elif self.request.get("cancel"):
+            self.redirect('/post/%s' % str(post.key().id()))
+
+class DeletePost(BlogHandler):
+    def get(self, post_id):
+        key = db.Key('Post', int(post_id), parent=models.blog_key())
+        post = key.get()
+        if not post:
+            self.error(404)
+            return
+        if self.user:
+            self.render('deletepost.html', post=post)
+        else:
+            error = "You need to login to delete a post."
+            self.render('login.html', error=error)
+
+    def post(self, post_id):
+        if not self.user:
+            return self.redirect('/login')
+        key = ndb.Key('Post', int(post_id), parent=models.blog_key())
+        post = key.get()
+
+        if post and (post.author.id() == self.user.key.id()):
+            post.key.delete()
+            time.sleep(0.1)
+            self.redirect('/')
+
+class Comment(db.Model):
+    user = db.ReferenceProperty(User, required=True)
+    post = db.ReferenceProperty(Post, required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
+    text = db.TextProperty(required=True)
+
+    @classmethod
+    def cdb_blog_id(cls, blog_id):
+        c = Comment.all().filter('post =', blog_id)
+        return c.count()
+
+    @classmethod
+    def adb_blog_id(cls, blog_id):
+        c = Comment.all().filter('post =', blog_id).order('created')
+        return c
+
+class DeleteComment(Handler):
+
+    def get(self, post_id, comment_id):
+        comment = Comment.get_by_id(int(comment_id))
+        if comment:
+            if comment.user.name == self.user.name:
+                db.delete(comment)
+                time.sleep(0.1)
+                self.redirect('/post/%s' % str(post_id))
+            else:
+                self.write("You cannot delete other user's comments")
+        else:
+            self.write("This comment no longer exists")
+
+class EditComment(Handler):
+
+    def get(self, post_id, comment_id):
+        post = Blog.get_by_id(int(post_id), parent=blog_key())
+        comment = Comment.get_by_id(int(comment_id))
+        if comment:
+            if comment.user.name == self.user.name:
+                self.render("editcomment.html", comment_text=comment.text)
+            else:
+                error = "You cannot edit other users' comments'"
+                self.render("editcomment.html", edit_error=error)
+        else:
+            error = "This comment no longer exists"
+            self.render("editcomment.html", edit_error=error)
+
+    def post(self, post_id, comment_id):
+        if self.request.get("update_comment"):
+            comment = Comment.get_by_id(int(comment_id))
+            if comment.user.name == self.user.name:
+                comment.text = self.request.get('comment_text')
+                comment.put()
+                time.sleep(0.1)
+                self.redirect('/post/%s' % str(post_id))
+            else:
+                error = "You cannot edit other users' comments'"
+                self.render(
+                    "editcomment.html",
+                    comment_text=comment.text,
+                    edit_error=error)
+        elif self.request.get("cancel"):
+            self.redirect('/post/%s' % str(post_id))
+
+class Like(db.Model):
+    user = db.ReferenceProperty(User, required=True)
+    post = db.ReferenceProperty(Post, required=True)
+
+    @classmethod
+    def dbl_blog_id(cls, blog_id):
+        l = Like.all().filter('post =', blog_id)
+        return l.count()
+
+    @classmethod
+    def likes(cls, blog_id, user_id):
+        cl = Like.all().filter('post =', blog_id).filter('user =', user_id)
+        return cl.count()
+
+class Unlike(db.Model):
+    user = db.ReferenceProperty(User, required=True)
+    post = db.ReferenceProperty(Post, required=True)
+
+    @classmethod
+    def dbu_blog_id(cls, blog_id):
+        ul = Unlike.all().filter('post =', blog_id)
+        return ul.count()
+
+    @classmethod
+    def unlikes(cls, blog_id, user_id):
+        cul = Unlike.all().filter('post =', blog_id).filter('user =', user_id)
+        return cul.count()
+
 ### Unit 2 HW's ###
+
 class Rot13(BlogHandler):
     def get(self):
         self.render('rot13-form.html')
@@ -293,8 +553,10 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/unit2/signup', Unit2Signup),
                                ('/unit2/welcome', Welcome),
                                ('/blog/?', BlogFront),
-                               ('/blog/([0-9]+)', PostPage),
-                               ('/blog/newpost', NewPost),
+                               ('/post/([0-9]+)', PostPage),
+                               ('/newpost', NewPost),
+                               ('/editpost/([0-9]+)', EditPost),
+                               ('/deletepost/[0-9]+)', DeletePost),
                                ('/signup', Register),
                                ('/login', Login),
                                ('/logout', Logout),

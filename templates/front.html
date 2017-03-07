@@ -1,10 +1,15 @@
 {% extends "base.html" %}
-
 {% block content %}
-
-  {% for p in posts %}
-    {{ p.render() | safe }}
-    <br><br>
+  {% for post in posts %}
+  <div class="row">
+    <hr>
+    <div class ="twelve columns">
+      <a href='/post/{{post.key().id()}}'>
+        <h4>{{post.subject}}</h4></a>
+        <small><u>Posted by {{post.user.name}} on {{post.created.strftime("%b %d, %Y")}}</u></small>
+        <p>{{ post.content | safe }}</p>
+    </div>
+  </div>
+  <hr>
   {% endfor %}
-
 {% endblock %}

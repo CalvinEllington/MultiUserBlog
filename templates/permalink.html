@@ -1,5 +1,25 @@
 {% extends "base.html" %}
-
 {% block content %}
-  {{post.render() | safe}}
+  <div class="row">
+    <div class="twelve columns">
+      <div class="twelve columns">
+        <a href='/post/{{post.key().id()}}'>
+          <h4>{{post.subject}}</h4></a>
+          <small><u>Posted by {{post.user.name}} on {{post.created.strftime("%b %d, %Y")}}</u></small>
+          <p>{{ post.content | safe }}</p>
+        <hr>
+        <div class="twelve columns">
+            {% if user %}
+              <form method="POST">
+                  <input type="submit" class="button" name='like' value='{{likes}} likes'>
+                  <input type="submit" class="button" name='unlike' value='{{unlikes}} unlikes'>
+                  <input type="submit" class="button" name='edit' value='edit'>
+                  <input type="submit" class="button" name='delete' value='delete'>
+              </form>
+              <span class="alert-danger">{{error}}</span>
+            {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 {% endblock %}

@@ -1,15 +1,22 @@
-<div class="post">
-  <div class="post-heading">
-    <div class="post-title">
-      {{p.subject}}
-    </div>
-
-    <div class="post-date">
-      {{p.created.strftime("%b %d, %Y")}}
+{% block content %}
+  <div class="row">
+    <div class="twelve columns">
+      <div class="twelve columns">
+        {{post.content | safe}}
+        <br>
+      </div>
+      <div class="twelve columns">
+        <br>
+          {% if user %}
+            <form method="POST">
+                <input type="submit" class="button" name='like' value='{{likes}} likes'>
+                <input type="submit" class="button" name='unlike' value='{{unlikes}} unlikes'>
+                <input type="submit" class="button" name='editpost' value='edit'>
+                <input type="submit" class="button" name='deletepost' value='delete'>
+            </form>
+            <span class="alert-danger">{{error}}</span>
+          {% endif %}
+      </div>
     </div>
   </div>
-
-  <div class="post-content">
-    {{p._render_text | safe}}
-  </div>
-</div>
+{% endblock %}
