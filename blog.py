@@ -411,7 +411,7 @@ class EditComment(BlogHandler):
             if comment.user.name == self.user.name:
                 self.render("editcomment.html", comment_text=comment.text)
             else:
-                error = "You cannot edit other users' comments'"
+                error = "You may only edit your own comments"
                 self.render("editcomment.html", edit_error=error)
         else:
             error = "This comment no longer exists"
@@ -426,7 +426,7 @@ class EditComment(BlogHandler):
                 time.sleep(0.1)
                 self.redirect('/post/%s' % str(post_id))
             else:
-                error = "You cannot edit other users' comments'"
+                error = "you may only edit your own comments"
                 self.render(
                     "editcomment.html",
                     comment_text=comment.text,
@@ -559,8 +559,8 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/newpost', NewPost),
                                ('/edit/([0-9]+)', EditPost),
                                ('/delete/([0-9]+)', DeletePost),
-                               ('/blog/([0-9]+)/editcomment/([0-9+])', EditComment),
-                               ('/blog/([0-9]+)/deletecomment/([0-9+])', DeleteComment),
+                               ('/post/([0-9]+)/editcomment/([0-9]+)', EditComment),
+                               ('/post/([0-9]+)/deletecomment/([0-9]+)', DeleteComment),
                                ('/signup', Register),
                                ('/login', Login),
                                ('/logout', Logout),

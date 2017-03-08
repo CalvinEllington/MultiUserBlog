@@ -2,19 +2,15 @@
 {% block content %}
   <div class="twelve columns">
     <h3>Edit Comment</h3>
-      <hr>
+    <hr>
       <div class="row">
         <div class="twelve columns">
-          <div class="u-pull-left">
-            <small>Posted by {{comment.user.name}} on {{comment.created.strftime("%b %d, %Y")}}</small>
-          </div>
-          <hr>
         <form method="post">
            <label>
-             <textarea class="u-full-width" name="content" id="texta2">{{comment_text}}</textarea>
+             <textarea class="u-full-width" name="comment_text" id="texta2">{{comment_text}}</textarea>
            </label>
-           <div class="error">{{post_error}}</div>
-           <input type="submit" class="button" name="update" value="Update">
+           <div class="error">{{edit_error}}</div>
+           <input type="submit" class="button" name="update_comment" value="Update">
            <input type="submit" class="button" name="cancel" value="Cancel">
          </form>
          </div>

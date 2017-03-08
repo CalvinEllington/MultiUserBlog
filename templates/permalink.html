@@ -34,8 +34,8 @@
                   </div>
                   <div class="u-pull-left">
                     {% if comment.user.name == user.name %}
-                        (<a href="/blog/{{post.key().id()}}/editcomment/{{comment.key().id()}}">edit</a> |
-                        <a href="/blog/{{post.key().id()}}/deletecomment/{{comment.key().id()}}">delete</a>)
+                        (<a href="/post/{{post.key().id()}}/editcomment/{{comment.key().id()}}">edit</a> |
+                        <a href="/post/{{post.key().id()}}/deletecomment/{{comment.key().id()}}">delete</a>)
                     {% endif %}
                   </div>
                 </div>
