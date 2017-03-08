@@ -16,3 +16,5 @@ To download my code and play around with my blog on your local machine please fo
   <li>Clone or download the repository from: https://github.com/NoOrangeJuice/MultiUserBlog.git
   <li>Run $ dev_appserver.py ~/YOUR_PATH_TO/app.yaml
   <li>Visit http://localhost:8080 to view the website.
+<hr>
+This blog was styled using the Skeleton CSS framework, all copyrights are listed in the main.css file. For more information visit http://getskeleton.com/.
