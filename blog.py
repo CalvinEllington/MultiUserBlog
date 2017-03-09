@@ -222,45 +222,49 @@ class PostPage(BlogHandler):
 
         if self.user:
             if self.request.get("like"):
-                if post.user.key().id() != User.by_name(self.user.name).key().id():
+                if post.user.key().id() != User.by_name(
+                self.user.name).key().id():
                     if previously_liked == 0:
-                        l = Like(post = post, user = User.by_name(self.user.name))
+                        l = Like(post=post,
+                                 user=User.by_name(self.user.name))
                         l.put()
                         time.sleep(0.1)
                         self.redirect('/post/%s' % str(post.key().id()))
                     else:
                         error = "You can only like a post once"
-                        self.render("post.html", post = post, likes = likes,
-                                                 unlikes = unlikes,
-                                                 error = error,
-                                                 comments_count = comments_count,
-                                                 post_comments = post_comments)
+                        self.render("post.html", post=post, likes=likes,
+                                                 unlikes=unlikes,
+                                                 error=error,
+                                                 comments_count=comments_count,
+                                                 post_comments=post_comments)
                 else:
                     error = "You cannot like your own posts"
-                    self.render("post.html", post = post, likes = likes,
-                                             unlikes = unlikes, error = error,
-                                             comments_count = comments_count,
-                                             post_comments = post_comments)
+                    self.render("post.html", post=post, likes=likes,
+                                             unlikes=unlikes, error=error,
+                                             comments_count=comments_count,
+                                             post_comments=post_comments)
             if self.request.get("unlike"):
-                if post.user.key().id() != User.by_name(self.user.name).key().id():
+                if post.user.key().id() != User.by_name(
+                self.user.name).key().id():
                     if previously_unliked == 0:
-                        ul = Unlike(post = post, user = User.by_name(self.user.name))
+                        ul = Unlike(post=post,
+                                    user=User.by_name(self.user.name))
                         ul.put()
                         time.sleep(0.1)
                         self.redirect('/post/%s' % str(post.key().id()))
                     else:
                         error = "You can only unlike a post once"
-                        self.render("post.html", post = post, likes = likes,
-                                                 unlikes = unlikes,
-                                                 error = error,
-                                                 comments_count = comments_count,
-                                                 post_comments = post_comments)
+                        self.render("post.html", post=post, likes=likes,
+                                                 unlikes=unlikes,
+                                                 error=error,
+                                                 comments_count=comments_count,
+                                                 post_comments=post_comments)
                 else:
                     error = "You cannot unlike your own posts"
-                    self.render("post.html", post = post, likes = likes,
-                                             unlikes = unlikes, error = error,
-                                             comments_count = comments_count,
-                                             post_comments = post_comments)
+                    self.render("post.html", post=post, likes=likes,
+                                             unlikes=unlikes, error=error,
+                                             comments_count=comments_count,
+                                             post_comments=post_comments)
             if self.request.get("add_comment"):
                 comment_text = self.request.get("comment_text")
                 if comment_text:
@@ -271,33 +275,35 @@ class PostPage(BlogHandler):
                     self.redirect('/post/%s' % str(post.key().id()))
                 else:
                     comment_error = "Please enter a comment"
-                    self.render("post.html", post = post, likes = likes,
+                    self.render("post.html", post=post, likes=likes,
                                              unlikes = unlikes,
-                                             comments_count = comments_count,
-                                             post_comments = post_comments,
-                                             comment_error = comment_error)
+                                             comments_count=comments_count,
+                                             post_comments=post_comments,
+                                             comment_error=comment_error)
             if self.request.get("edit"):
-                if post.user.key().id() == User.by_name(self.user.name).key().id():
+                if post.user.key().id() == User.by_name(
+                self.user.name).key().id():
                     self.redirect('/edit/%s' % str(post.key().id()))
                 else:
                     error = "You may only edit your own posts"
-                    self.render("post.html", post = post, likes = likes,
-                                             unlikes = unlikes,
-                                             comments_count = comments_count,
-                                             post_comments = post_comments,
-                                             error = error)
+                    self.render("post.html", post=post, likes=likes,
+                                             unlikes=unlikes,
+                                             comments_count=comments_count,
+                                             post_comments=post_comments,
+                                             error=error)
             if self.request.get("delete"):
-                if post.user.key().id() == User.by_name(self.user.name).key().id():
+                if post.user.key().id() == User.by_name(
+                self.user.name).key().id():
                     db.delete(key)
                     time.sleep(0.1)
                     self.redirect('/')
                 else:
                     error = "You may only delete your own posts"
-                    self.render("post.html", post = post, likes = likes,
-                                             unlikes = unlikes,
-                                             comments_count = comments_count,
-                                             post_comments = post_comments,
-                                             error = error)
+                    self.render("post.html", post=post, likes=likes,
+                                             unlikes=unlikes,
+                                             comments_count=comments_count,
+                                             post_comments=post_comments,
+                                             error=error)
         else:
             self.redirect("/login")
 
@@ -310,7 +316,7 @@ class NewPost(BlogHandler):
 
     def post(self):
         if not self.user:
-            self.redirect('/blog')
+            return self.redirect('/login')
 
         subject = self.request.get('subject')
         content = self.request.get('content')
@@ -329,6 +335,9 @@ class EditPost(BlogHandler):
     def get(self, blog_id):
         key = db.Key.from_path("Post", int(blog_id), parent=blog_key())
         post = db.get(key)
+        if not post:
+            self.error(404)
+            return
 
         if self.user:
             if post.user.key().id() == User.by_name(self.user.name).key().id():
@@ -341,6 +350,9 @@ class EditPost(BlogHandler):
     def post(self, blog_id):
         key = db.Key.from_path("Post", int(blog_id), parent=blog_key())
         post = db.get(key)
+        if not post:
+            self.error(404)
+            return
 
         if self.request.get("update"):
 
