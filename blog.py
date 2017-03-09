@@ -323,12 +323,18 @@ class NewPost(BlogHandler):
         user_id = User.by_name(self.user.name)
 
         if subject and content:
-            p = Post(parent = blog_key(), subject = subject, content = content, user = user_id)
+            p = Post(parent=blog_key(),
+                     subject=subject,
+                     content=content,
+                     user=user_id)
             p.put()
             self.redirect('/post/%s' % str(p.key().id()))
         else:
             error = "subject and content, please!"
-            self.render("newpost.html", subject=subject, content=content, error=error)
+            self.render("newpost.html",
+                         subject=subject,
+                         content=content,
+                         error=error)
 
 class EditPost(BlogHandler):
 
@@ -571,8 +577,10 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/newpost', NewPost),
                                ('/edit/([0-9]+)', EditPost),
                                ('/delete/([0-9]+)', DeletePost),
-                               ('/post/([0-9]+)/editcomment/([0-9]+)', EditComment),
-                               ('/post/([0-9]+)/deletecomment/([0-9]+)', DeleteComment),
+                               ('/post/([0-9]+)/editcomment/([0-9]+)',
+                               EditComment),
+                               ('/post/([0-9]+)/deletecomment/([0-9]+)',
+                               DeleteComment),
                                ('/signup', Register),
                                ('/login', Login),
                                ('/logout', Logout),
