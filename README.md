@@ -13,7 +13,7 @@ To download my code and play around with my blog on your local machine please fo
   <li>Install Git.
   <li>Install python.
   <li>Install Google App Engine SDK.
-  <li>Clone or download the repository from: https://github.com/NoOrangeJuice/MultiUserBlog.git
+  <li>Clone or download the repository from: https://github.com/CalvinEllington/MultiUserBlog.git
   <li>Run $ dev_appserver.py ~/YOUR_PATH_TO/app.yaml
   <li>Visit http://localhost:8080 to view the website.
 </ul>
